@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>AI Navigation Assistant</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f2f3f4;
+      text-align: center;
+      padding: 30px;
+    }
+    h2 {
+      color: #2c3e50;
+    }
+    video {
+      border: 4px solid #3498db;
+      border-radius: 10px;
+    }
+    #output {
+      margin-top: 25px;
+      font-size: 18px;
+      font-weight: bold;
+      color: #2d3436;
+    }
+    .container {
+      max-width: 600px;
+      margin: auto;
+    }
+    .note {
+      color: #888;
+      font-size: 14px;
+      margin-top: 10px;
+    }
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
+      margin: 10px 5px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    #askBtn {
+      background-color: #27ae60;
+      color: white;
+    }
+    #askBtn:hover {
+      background-color: #1e8449;
+    }
+    #closeBtn {
+      background-color: #c0392b;
+      color: white;
+      display: none;
+    }
+    #closeBtn:hover {
+      background-color: #96281b;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Real-Time AI Navigation Assistant</h2>
+    <video id="video" width="320" height="240" autoplay muted></video><br>
+    <button id="askBtn" onclick="startAskMode()">Ask Q</button>
+    <button id="closeBtn" onclick="stopAskMode()">Close Ask</button>
+    <p class="note">Live guidance with voice and object detection</p>
+    <p id="output">Initializing...</p>
+  </div>
+
+  <script>
+    const video = document.getElementById('video');
+    const output = document.getElementById('output');
+    let lastMessage = "";
+    let isSpeaking = false;
+    let askMode = false;
+    let recognition;
+    let interval;
+
+    navigator.mediaDevices.getUserMedia({ video: true })
+      .then(stream => {
+        video.srcObject = stream;
+        video.onloadedmetadata = () => {
+          startGuidanceLoop();
+          initVoiceCommands();
+        };
+      })
+      .catch(() => output.textContent = "Camera access denied.");
+
+    function startGuidanceLoop() {
+      interval = setInterval(() => {
+        if (!isSpeaking && !askMode) captureAndAnalyze();
+      }, 5000);
+    }
+
+    function stopGuidanceLoop() {
+      clearInterval(interval);
+    }
+
+    function captureAndAnalyze() {
+      const canvas = document.createElement('canvas');
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      canvas.getContext('2d').drawImage(video, 0, 0);
+      const image = canvas.toDataURL('image/jpeg');
+      output.textContent = "Analyzing...";
+
+      fetch('/analyze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ image })
+      })
+      .then(res => res.json())
+      .then(data => {
+        lastMessage = data.response;
+        output.textContent = lastMessage;
+        speak(lastMessage);
+      });
+    }
+
+    function speak(text) {
+      isSpeaking = true;
+      const utter = new SpeechSynthesisUtterance(text);
+      utter.lang = "en-US";
+      utter.rate = 1;
+      speechSynthesis.cancel();
+      speechSynthesis.speak(utter);
+      utter.onend = () => isSpeaking = false;
+    }
+
+    function startAskMode() {
+      askMode = true;
+      stopGuidanceLoop();
+      document.getElementById("askBtn").style.display = "none";
+      document.getElementById("closeBtn").style.display = "inline-block";
+      output.textContent = "Listening for your question...";
+
+      const askRecog = new webkitSpeechRecognition();
+      askRecog.lang = "en-US";
+      askRecog.interimResults = false;
+      askRecog.continuous = false;
+
+      askRecog.onresult = e => {
+        const question = e.results[0][0].transcript;
+        output.textContent = `You asked: ${question}`;
+        fetch('/ask', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ query: question })
+        })
+        .then(res => res.json())
+        .then(data => {
+          output.textContent = data.response;
+          speak(data.response);
+        });
+      };
+      askRecog.start();
+    }
+
+    function stopAskMode() {
+      askMode = false;
+      output.textContent = "Resuming guidance...";
+      startGuidanceLoop();
+      document.getElementById("askBtn").style.display = "inline-block";
+      document.getElementById("closeBtn").style.display = "none";
+    }
+
+    function initVoiceCommands() {
+      if (!('webkitSpeechRecognition' in window)) return;
+      recognition = new webkitSpeechRecognition();
+      recognition.lang = 'en-US';
+      recognition.continuous = true;
+      recognition.onresult = (event) => {
+        const transcript = event.results[event.results.length - 1][0].transcript.trim().toLowerCase();
+        if (transcript.includes('repeat')) speak(lastMessage);
+        else if (transcript.includes('pause')) isSpeaking = true;
+        else if (transcript.includes('resume')) isSpeaking = false;
+        else if (transcript.includes('what is ahead')) captureAndAnalyze();
+      };
+      recognition.start();
+    }
+  </script>
+</body>
+</html>
