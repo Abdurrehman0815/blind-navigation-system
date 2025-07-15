@@ -54,6 +54,13 @@
     #closeBtn:hover {
       background-color: #96281b;
     }
+    #flipBtn {
+      background-color: #2980b9;
+      color: white;
+    }
+    #flipBtn:hover {
+      background-color: #21618c;
+    }
   </style>
 </head>
 <body>
@@ -62,6 +69,7 @@
     <video id="video" width="320" height="240" autoplay muted></video><br>
     <button id="askBtn" onclick="startAskMode()">Ask Q</button>
     <button id="closeBtn" onclick="stopAskMode()">Close Ask</button>
+    <button id="flipBtn" onclick="toggleCamera()">🔄 Flip Camera</button>
     <p class="note">Live guidance with voice and object detection</p>
     <p id="output">Initializing...</p>
   </div>
@@ -74,16 +82,37 @@
     let askMode = false;
     let recognition;
     let interval;
+    let usingBackCamera = true;
+    let currentStream;
 
-    navigator.mediaDevices.getUserMedia({ video: true })
-      .then(stream => {
-        video.srcObject = stream;
-        video.onloadedmetadata = () => {
-          startGuidanceLoop();
-          initVoiceCommands();
-        };
-      })
-      .catch(() => output.textContent = "Camera access denied.");
+    function startCamera() {
+      const constraints = {
+        video: {
+          facingMode: usingBackCamera ? { exact: "environment" } : "user"
+        },
+        audio: false
+      };
+
+      navigator.mediaDevices.getUserMedia(constraints)
+        .then(stream => {
+          if (currentStream) {
+            currentStream.getTracks().forEach(track => track.stop());
+          }
+          currentStream = stream;
+          video.srcObject = stream;
+          video.onloadedmetadata = () => {
+            startGuidanceLoop();
+            initVoiceCommands();
+          };
+        })
+        .catch(() => output.textContent = "Camera access denied.");
+    }
+
+    function toggleCamera() {
+      usingBackCamera = !usingBackCamera;
+      stopGuidanceLoop();
+      startCamera();
+    }
 
     function startGuidanceLoop() {
       interval = setInterval(() => {
@@ -177,6 +206,11 @@
       };
       recognition.start();
     }
+
+    // Start camera on load
+    window.onload = () => {
+      startCamera();
+    };
   </script>
 </body>
 </html>
