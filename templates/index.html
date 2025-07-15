@@ -1,72 +1,120 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>AI Navigation Assistant</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      background-color: #f2f3f4;
-      text-align: center;
-      padding: 30px;
+    * {
+      box-sizing: border-box;
     }
+
+    body, html {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      font-family: Arial, sans-serif;
+      background: linear-gradient(135deg, #74ebd5, #9face6);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .container {
+      background: white;
+      padding: 25px 20px;
+      border-radius: 15px;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+      max-width: 100%;
+      width: 90%;
+      max-width: 500px;
+      text-align: center;
+    }
+
     h2 {
       color: #2c3e50;
+      margin-bottom: 15px;
     }
+
     video {
+      width: 100%;
+      max-width: 100%;
+      height: auto;
       border: 4px solid #3498db;
       border-radius: 10px;
+      margin-bottom: 15px;
     }
-    #output {
-      margin-top: 25px;
-      font-size: 18px;
-      font-weight: bold;
-      color: #2d3436;
-    }
-    .container {
-      max-width: 600px;
-      margin: auto;
-    }
-    .note {
-      color: #888;
-      font-size: 14px;
-      margin-top: 10px;
-    }
+
     button {
       padding: 10px 20px;
       font-size: 16px;
-      margin: 10px 5px;
+      margin: 6px 4px;
       border: none;
       border-radius: 5px;
       cursor: pointer;
+      transition: all 0.3s ease;
     }
+
     #askBtn {
       background-color: #27ae60;
       color: white;
     }
+
     #askBtn:hover {
       background-color: #1e8449;
     }
+
     #closeBtn {
       background-color: #c0392b;
       color: white;
       display: none;
     }
+
     #closeBtn:hover {
       background-color: #96281b;
     }
+
     #flipBtn {
       background-color: #2980b9;
       color: white;
     }
+
     #flipBtn:hover {
       background-color: #21618c;
+    }
+
+    #output {
+      margin-top: 18px;
+      font-size: 17px;
+      font-weight: bold;
+      color: #2d3436;
+      min-height: 50px;
+    }
+
+    .note {
+      font-size: 14px;
+      color: #777;
+      margin-top: 8px;
+    }
+
+    @media (max-width: 500px) {
+      button {
+        width: 100%;
+        margin: 8px 0;
+      }
+
+      .container {
+        border-radius: 10px;
+        padding: 20px 15px;
+      }
     }
   </style>
 </head>
 <body>
   <div class="container">
     <h2>Real-Time AI Navigation Assistant</h2>
-    <video id="video" width="320" height="240" autoplay muted></video><br>
+    <video id="video" autoplay muted playsinline></video>
+    <br />
     <button id="askBtn" onclick="startAskMode()">Ask Q</button>
     <button id="closeBtn" onclick="stopAskMode()">Close Ask</button>
     <button id="flipBtn" onclick="toggleCamera()">🔄 Flip Camera</button>
